@@ -17,40 +17,53 @@ export default function Map3D() {
         timeline: false,
       });
 
-      const tleLine1 = '1 25544U 98067A   23271.49841052  .00013340  00000-0  24294-3 0  9997';
-      const tleLine2 = '2 25544  51.6416 288.7501 0005728 126.9631 294.7570 15.49811425417855';
-      const satrec = satellite.twoline2satrec(tleLine1, tleLine2);
-
-      const dynamicPosition = new Cesium.CallbackProperty(() => {
-        const rightNow = new Date();
-        const positionAndVelocity = satellite.propagate(satrec, rightNow);
+      try {
+        // Api call to get the TLE
+        const response = await fetch('https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=tle');
         
-        if (!positionAndVelocity.position) return null;
+        // Data extraction and parsing
+        const textData = await response.text();
+        const tleLines = textData.split('\n');
+        
+        const tleLine1 = tleLines[1].trim();
+        const tleLine2 = tleLines[2].trim();
 
-        const positionEci = positionAndVelocity.position;
-        const gmst = satellite.gstime(rightNow);
-        const positionGd = satellite.eciToGeodetic(positionEci, gmst);
+        const satrec = satellite.twoline2satrec(tleLine1, tleLine2);
 
-        const longitude = satellite.degreesLong(positionGd.longitude);
-        const latitude = satellite.degreesLat(positionGd.latitude);
-        const heightInMeters = positionGd.height * 1000;
+        const dynamicPosition = new Cesium.CallbackProperty(() => {
+          const rightNow = new Date();
+          const positionAndVelocity = satellite.propagate(satrec, rightNow);
+          
+          if (!positionAndVelocity.position) return null;
 
-        return Cesium.Cartesian3.fromDegrees(longitude, latitude, heightInMeters);
-      }, false);
+          const positionEci = positionAndVelocity.position;
+          const gmst = satellite.gstime(rightNow);
+          const positionGd = satellite.eciToGeodetic(positionEci, gmst);
 
-      const issEntity = viewer.entities.add({
-        id: 'ISS',
-        name: 'Station Spatiale Internationale',
-        position: dynamicPosition,
-        point: {
-          pixelSize: 15,
-          color: Cesium.Color.RED,
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 2,
-        },
-      });
+          const longitude = satellite.degreesLong(positionGd.longitude);
+          const latitude = satellite.degreesLat(positionGd.latitude);
+          const heightInMeters = positionGd.height * 1000;
 
-      viewer.trackedEntity = issEntity; 
+          return Cesium.Cartesian3.fromDegrees(longitude, latitude, heightInMeters);
+        }, false);
+
+        const issEntity = viewer.entities.add({
+          id: 'ISS',
+          name: tleLines[0].trim(), 
+          position: dynamicPosition,
+          point: {
+            pixelSize: 15,
+            color: Cesium.Color.RED,
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 2,
+          },
+        });
+
+        viewer.trackedEntity = issEntity;
+
+      } catch (error) {
+        console.error("Impossible de récupérer les données du satellite :", error);
+      }
     };
 
     initCesium();
