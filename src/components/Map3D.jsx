@@ -19,25 +19,29 @@ export default function Map3D() {
 
       const tleLine1 = '1 25544U 98067A   23271.49841052  .00013340  00000-0  24294-3 0  9997';
       const tleLine2 = '2 25544  51.6416 288.7501 0005728 126.9631 294.7570 15.49811425417855';
-
       const satrec = satellite.twoline2satrec(tleLine1, tleLine2);
 
-      const rightNow = new Date();
-      const positionAndVelocity = satellite.propagate(satrec, rightNow);
+      const dynamicPosition = new Cesium.CallbackProperty(() => {
+        const rightNow = new Date();
+        const positionAndVelocity = satellite.propagate(satrec, rightNow);
+        
+        if (!positionAndVelocity.position) return null;
 
-      const positionEci = positionAndVelocity.position;
-      
-      const gmst = satellite.gstime(rightNow);
-      const positionGd = satellite.eciToGeodetic(positionEci, gmst);
+        const positionEci = positionAndVelocity.position;
+        const gmst = satellite.gstime(rightNow);
+        const positionGd = satellite.eciToGeodetic(positionEci, gmst);
 
-      const longitude = satellite.degreesLong(positionGd.longitude);
-      const latitude = satellite.degreesLat(positionGd.latitude);
-      const heightInMeters = positionGd.height * 1000;
+        const longitude = satellite.degreesLong(positionGd.longitude);
+        const latitude = satellite.degreesLat(positionGd.latitude);
+        const heightInMeters = positionGd.height * 1000;
 
-      viewer.entities.add({
+        return Cesium.Cartesian3.fromDegrees(longitude, latitude, heightInMeters);
+      }, false);
+
+      const issEntity = viewer.entities.add({
         id: 'ISS',
         name: 'Station Spatiale Internationale',
-        position: Cesium.Cartesian3.fromDegrees(longitude, latitude, heightInMeters),
+        position: dynamicPosition,
         point: {
           pixelSize: 15,
           color: Cesium.Color.RED,
@@ -45,6 +49,8 @@ export default function Map3D() {
           outlineWidth: 2,
         },
       });
+
+      viewer.trackedEntity = issEntity; 
     };
 
     initCesium();
