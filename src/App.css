@@ -47,14 +47,13 @@
   border-radius: 4px;
 }
 
-.classCat {
+.toggleAll {
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 1.1em;
   color: #eee;
   cursor: pointer;
-  margin: 10px;
 }
 
 .classSat {

@@ -12,7 +12,7 @@ export default function SidebarMenu({ satellites, onSelect }) {
       </select>
       
       <SelectionDiv 
-        classParam="classCat"
+        classParam="toggleAll"
         id="toggle-all"
         satName="Tout afficher / masquer"
         isChecked={false}
