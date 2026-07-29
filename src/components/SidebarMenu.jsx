@@ -48,7 +48,7 @@ export default function SidebarMenu({ satellites, activeSatellites, currentCateg
       </div>
       
       <SelectionDiv 
-        classParam="classCat"
+        classParam="toggleAll"
         id="toggle-all"
         satName="Tout afficher / masquer"
         isChecked={isAllChecked}

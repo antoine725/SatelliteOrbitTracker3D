@@ -51,7 +51,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 0;
+  font-weight: bold;
   font-size: 0.9em;
   color: #eee;
   cursor: pointer;
