@@ -29,13 +29,23 @@ export default function SidebarMenu({ satellites, activeSatellites, currentCateg
         <option value="starlink">Starlink</option>
       </select>
 
-      <input 
-        type="text" 
-        className="search-input"
-        placeholder="Rechercher un satellite..." 
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
+      <div className="search-container">
+        <input 
+          type="text" 
+          className="search-input"
+          placeholder="Rechercher un satellite..." 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {searchTerm && (
+          <button 
+            className="clear-search" 
+            onClick={() => setSearchTerm('')}
+          >
+            ×
+          </button>
+        )}
+      </div>
       
       <SelectionDiv 
         classParam="classCat"
