@@ -82,6 +82,7 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
 
         let satColor = Cesium.Color.RED;
         let satSize = 10;
+        let maxDisplayDistance = 10000000.0;
 
         if (sat.category === 'visual') {
           satColor = Cesium.Color.RED;
@@ -92,6 +93,7 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
         } else if (sat.category === 'starlink') {
           satColor = Cesium.Color.WHITE;
           satSize = 4;
+          maxDisplayDistance = 2000000.0;
         }
 
         viewer.entities.add({
@@ -103,6 +105,17 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
             color: satColor,
             outlineWidth: 1,
           },
+          label: {
+            text: sat.name,
+            font: '12px sans-serif',
+            fillColor: Cesium.Color.WHITE,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            outlineWidth: 2,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -15),
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, maxDisplayDistance),
+            show: true
+          }
         });
       }
     });
@@ -111,11 +124,20 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
 
   useEffect(() => {
     if (!viewer) return;
+
+    viewer.entities.values.forEach(entity => {
+      if (entity.label) {
+        entity.label.show = true;
+      }
+    });
     
     if (trackedSatelliteId) {
       const entity = viewer.entities.getById(trackedSatelliteId);
       if (entity) {
         viewer.trackedEntity = entity;
+        if (entity.label) {
+          entity.label.show = false;
+        }
       }
     } else {
       viewer.trackedEntity = undefined;

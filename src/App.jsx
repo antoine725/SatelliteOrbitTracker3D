@@ -10,19 +10,51 @@ export default function App() {
   const [activeSatellites, setActiveSatellites] = useState([]);
   const [lastClickedSatellite, setLastClickedSatellite] = useState(null);
   const [trackedSatelliteId, setTrackedSatelliteId] = useState(null);
+  const [apiError, setApiError] = useState(null);
 
   useEffect(() => {
     const fetchSatellites = async () => {
       setSatellites([]); 
+      setApiError(null);
+      
+      const cacheKey = `celestrak_data_${category}`;
+      const cacheTimeKey = `celestrak_time_${category}`;
+      const cachedData = localStorage.getItem(cacheKey);
+      const cachedTime = localStorage.getItem(cacheTimeKey);
+      
+      const isCacheValid = cachedData && cachedTime && (Date.now() - parseInt(cachedTime)) < 3600000;
+
       try {
-        const response = await fetch(`https://celestrak.org/NORAD/elements/gp.php?GROUP=${category}&FORMAT=tle`);
-        const textData = await response.text();
-        
+        let textData = "";
+
+        if (isCacheValid) {
+          console.log(`[DATA] Chargement depuis le cache local pour la catégorie : ${category}`);
+          textData = cachedData;
+        } else {
+          console.log(`[DATA] Téléchargement depuis l'API CelesTrak pour la catégorie : ${category}`);
+          const response = await fetch(`https://celestrak.org/NORAD/elements/gp.php?GROUP=${category}&FORMAT=tle`);
+          textData = await response.text();
+
+          if (textData.trim().startsWith('<')) {
+            setApiError("CelesTrak a bloqué votre IP pour requêtes trop fréquentes. Utilisez un VPN ou patientez.");
+            setSatellites([]);
+            return;
+          }
+
+          if (!textData.includes('\n') || textData.includes('GP data has not updated')) {
+            setSatellites([]);
+            return;
+          }
+
+          localStorage.setItem(cacheKey, textData);
+          localStorage.setItem(cacheTimeKey, Date.now().toString());
+        }
+
         const lines = textData.split('\n');
         const parsedSatellites = [];
         
         for (let i = 0; i < lines.length; i += 3) {
-          if (lines[i] && lines[i + 1] && lines[i + 2]) {
+          if (lines[i] && lines[i + 1] && lines[i + 2] && lines[i + 1].length > 20) {
             const noradId = lines[i + 1].substring(2, 7).trim();
             parsedSatellites.push({
               id: noradId,
@@ -37,6 +69,7 @@ export default function App() {
         setSatellites(parsedSatellites);
       } catch (error) {
         console.error(error);
+        setApiError("Erreur de connexion à CelesTrak.");
       }
     };
 
@@ -108,6 +141,7 @@ export default function App() {
         onCategoryChange={setCategory}
         onSelect={handleSelect} 
         onToggleAll={handleToggleAll}
+        apiError={apiError}
       />
 
       <InfoPanel 

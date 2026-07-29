@@ -1,6 +1,13 @@
+import { useState } from 'react';
 import SelectionDiv from './SelectionDiv';
 
 export default function SidebarMenu({ satellites, activeSatellites, currentCategory, onCategoryChange, onSelect, onToggleAll }) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredSatellites = satellites.filter(sat => 
+    sat.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const isAllChecked = satellites.length > 0 && satellites.every(sat => 
     activeSatellites.some(active => active.id === sat.id)
   );
@@ -12,12 +19,23 @@ export default function SidebarMenu({ satellites, activeSatellites, currentCateg
       <select 
         className="category-select" 
         value={currentCategory} 
-        onChange={(e) => onCategoryChange(e.target.value)}
+        onChange={(e) => {
+          setSearchTerm('');
+          onCategoryChange(e.target.value);
+        }}
       >
         <option value="visual">Visibles à l'œil nu</option>
         <option value="weather">Météo</option>
         <option value="starlink">Starlink</option>
       </select>
+
+      <input 
+        type="text" 
+        className="search-input"
+        placeholder="Rechercher un satellite..." 
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
       
       <SelectionDiv 
         classParam="classCat"
@@ -32,8 +50,10 @@ export default function SidebarMenu({ satellites, activeSatellites, currentCateg
       <div className="satellite-list" style={{ overflowY: 'auto', flex: 1 }}>
         {satellites.length === 0 ? (
           <p style={{ fontSize: '0.9em', color: '#ccc' }}>Chargement des données...</p>
+        ) : filteredSatellites.length === 0 ? (
+          <p style={{ fontSize: '0.9em', color: '#ccc' }}>Aucun résultat.</p>
         ) : (
-          satellites.map((sat) => {
+          filteredSatellites.map((sat) => {
             const isChecked = activeSatellites.some((active) => active.id === sat.id);
             return (
               <SelectionDiv 
