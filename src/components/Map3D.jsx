@@ -1,34 +1,67 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Cesium from 'cesium';
 import * as satellite from 'satellite.js';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN;
 
-export default function Map3D() {
+export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSatelliteId, onSatelliteSelect }) {
   const cesiumContainer = useRef(null);
+  const [viewer, setViewer] = useState(null);
 
   useEffect(() => {
-    let viewer;
+    const v = new Cesium.Viewer(cesiumContainer.current, {
+      animation: false,
+      timeline: false,
+      infoBox: true,
+      selectionIndicator: true
+    });
+    
+    setViewer(v);
 
-    const initCesium = async () => {
-      viewer = new Cesium.Viewer(cesiumContainer.current, {
-        animation: false,
-        timeline: false,
-      });
+    return () => {
+      v.destroy();
+    };
+  }, []);
 
-      try {
-        // Api call to get the TLE
-        const response = await fetch('https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=tle');
-        
-        // Data extraction and parsing
-        const textData = await response.text();
-        const tleLines = textData.split('\n');
-        
-        const tleLine1 = tleLines[1].trim();
-        const tleLine2 = tleLines[2].trim();
+  useEffect(() => {
+    if (!viewer) return;
 
-        const satrec = satellite.twoline2satrec(tleLine1, tleLine2);
+    const listener = (selectedEntity) => {
+      if (selectedEntity) {
+        onSatelliteSelect(selectedEntity.id);
+      } else {
+        onSatelliteSelect(null);
+      }
+    };
+
+    viewer.selectedEntityChanged.addEventListener(listener);
+
+    return () => {
+      viewer.selectedEntityChanged.removeEventListener(listener);
+    };
+  }, [viewer, onSatelliteSelect]);
+
+  useEffect(() => {
+    if (!viewer) return;
+
+    const currentIds = activeSatellites.map((sat) => sat.id);
+
+    const entitiesToRemove = [];
+    for (let i = 0; i < viewer.entities.values.length; i++) {
+      const entity = viewer.entities.values[i];
+      if (!currentIds.includes(entity.id)) {
+        entitiesToRemove.push(entity);
+      }
+    }
+    
+    entitiesToRemove.forEach((entity) => {
+      viewer.entities.remove(entity);
+    });
+
+    activeSatellites.forEach((sat) => {
+      if (!viewer.entities.getById(sat.id)) {
+        const satrec = satellite.twoline2satrec(sat.tleLine1, sat.tleLine2);
 
         const dynamicPosition = new Cesium.CallbackProperty(() => {
           const rightNow = new Date();
@@ -47,9 +80,9 @@ export default function Map3D() {
           return Cesium.Cartesian3.fromDegrees(longitude, latitude, heightInMeters);
         }, false);
 
-        const issEntity = viewer.entities.add({
-          id: 'ISS',
-          name: tleLines[0].trim(), 
+        viewer.entities.add({
+          id: sat.id,
+          name: sat.name,
           position: dynamicPosition,
           point: {
             pixelSize: 15,
@@ -58,22 +91,36 @@ export default function Map3D() {
             outlineWidth: 2,
           },
         });
-
-        viewer.trackedEntity = issEntity;
-
-      } catch (error) {
-        console.error("Impossible de récupérer les données du satellite :", error);
       }
-    };
+    });
 
-    initCesium();
+  }, [activeSatellites, viewer]);
 
-    return () => {
-      if (viewer) {
-        viewer.destroy();
+  useEffect(() => {
+    if (!viewer) return;
+    
+    if (trackedSatelliteId) {
+      const entity = viewer.entities.getById(trackedSatelliteId);
+      if (entity) {
+        viewer.trackedEntity = entity;
       }
-    };
-  }, []);
+    } else {
+      viewer.trackedEntity = undefined;
+    }
+  }, [trackedSatelliteId, viewer]);
+
+  useEffect(() => {
+    if (!viewer) return;
+
+    if (selectedSatelliteId) {
+      const entity = viewer.entities.getById(selectedSatelliteId);
+      if (entity && viewer.selectedEntity !== entity) {
+        viewer.selectedEntity = entity;
+      }
+    } else {
+      viewer.selectedEntity = undefined;
+    }
+  }, [selectedSatelliteId, viewer]);
 
   return <div ref={cesiumContainer} style={{ width: '100%', height: '100%' }} />;
 }

@@ -51,7 +51,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 1.1em;
+  padding: 5px 0;
+  font-size: 0.9em;
   color: #eee;
   cursor: pointer;
 }
@@ -74,13 +75,29 @@
 /* Satellite information panel */
 
 .info-panel {
+  display: block;
   position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: rgba(30, 30, 30, 0.85);
-  padding: 20px;
-  border-radius: 8px;
-  backdrop-filter: blur(5px);
+  top: 85px;
+  right: 0;
+  width: 40%;
+  max-width: 480px;
+  background: rgba(38, 38, 38, 0.95);
+  color: #edffff;
+  border: 1px solid #444;
+  border-right: none;
+  border-top-left-radius: 7px;
+  border-bottom-left-radius: 7px;
+  box-shadow: 0 0 10px 1px #000;
+  transform: translate(100%, 0);
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0s 0.2s, opacity 0.2s ease-in, transform 0.2s ease-in;
   z-index: 10;
-  min-width: 250px;
+}
+
+.info-panel.visible {
+  transform: translate(0, 0);
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
 }
