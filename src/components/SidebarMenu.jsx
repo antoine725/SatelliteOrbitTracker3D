@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import SelectionDiv from './SelectionDiv';
 
-export default function SidebarMenu({ satellites, activeSatellites, currentCategory, onCategoryChange, onSelect, onToggleAll }) {
+export default function SidebarMenu({ satellites, activeSatellites, currentCategory, onCategoryChange, onToggle, onFocus, onToggleAll, apiError }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredSatellites = satellites.filter(sat => 
@@ -48,7 +48,9 @@ export default function SidebarMenu({ satellites, activeSatellites, currentCateg
       <hr style={{ borderColor: '#333', margin: '1px 0' }} />
 
       <div className="satellite-list" style={{ overflowY: 'auto', flex: 1 }}>
-        {satellites.length === 0 ? (
+        {apiError ? (
+          <p style={{ fontSize: '0.9em', color: '#d9534f', lineHeight: '1.5' }}>{apiError}</p>
+        ) : satellites.length === 0 ? (
           <p style={{ fontSize: '0.9em', color: '#ccc' }}>Chargement des données...</p>
         ) : filteredSatellites.length === 0 ? (
           <p style={{ fontSize: '0.9em', color: '#ccc' }}>Aucun résultat.</p>
@@ -62,7 +64,8 @@ export default function SidebarMenu({ satellites, activeSatellites, currentCateg
                 id={`sat-${sat.id}`}
                 satName={sat.name}
                 isChecked={isChecked}
-                onChange={() => onSelect(sat)}
+                onChange={() => onToggle(sat)}
+                onNameClick={() => onFocus(sat)}
               />
             );
           })

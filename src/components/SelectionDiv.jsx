@@ -1,15 +1,25 @@
-export default function SelectionDiv({ classParam, id, satName, isChecked, onChange }) {
+export default function SelectionDiv({ classParam, id, satName, isChecked, onChange, onNameClick }) {
   return (
     <div className={classParam}>
       <input 
         type="checkbox" 
         id={id} 
-        name={satName} 
-        value={satName}
-        checked={isChecked}
-        onChange={onChange}
+        checked={isChecked} 
+        onChange={onChange} 
+        style={{ cursor: 'pointer' }}
       />
-      <label htmlFor={id}>{satName}</label>
+      <label 
+        htmlFor={id}
+        onClick={(e) => {
+          if (onNameClick) {
+            e.preventDefault(); 
+            onNameClick();
+          }
+        }}
+        style={{ cursor: 'pointer', flex: 1, userSelect: 'none' }}
+      >
+        {satName}
+      </label>
     </div>
   );
 }

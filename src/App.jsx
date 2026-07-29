@@ -76,7 +76,7 @@ export default function App() {
     fetchSatellites();
   }, [category]);
 
-  const handleSelect = (sat) => {
+  const handleToggle = (sat) => {
     setActiveSatellites((prev) => {
       const isSelected = prev.some((s) => s.id === sat.id);
       if (isSelected) {
@@ -87,6 +87,16 @@ export default function App() {
         setLastClickedSatellite(sat);
         return [...prev, sat];
       }
+    });
+  };
+
+  const handleFocus = (sat) => {
+    setLastClickedSatellite(sat);
+    setActiveSatellites((prev) => {
+      if (!prev.some((s) => s.id === sat.id)) {
+        return [...prev, sat];
+      }
+      return prev;
     });
   };
 
@@ -139,7 +149,8 @@ export default function App() {
         activeSatellites={activeSatellites}
         currentCategory={category}
         onCategoryChange={setCategory}
-        onSelect={handleSelect} 
+        onToggle={handleToggle} 
+        onFocus={handleFocus}
         onToggleAll={handleToggleAll}
         apiError={apiError}
       />
