@@ -15,6 +15,15 @@
   height: 100%;
 }
 
+/* Cesium containers */
+
+.cesium-viewer-toolbar,
+.cesium-viewer-geocoderContainer,
+.cesium-viewer-fullscreenContainer,
+.cesium-baseLayerPicker-dropDown {
+  z-index: 20 !important;
+}
+
 /* Selection menu panel */
 
 .overlay-menu {
