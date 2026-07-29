@@ -80,15 +80,28 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
           return Cesium.Cartesian3.fromDegrees(longitude, latitude, heightInMeters);
         }, false);
 
+        let satColor = Cesium.Color.RED;
+        let satSize = 10;
+
+        if (sat.category === 'visual') {
+          satColor = Cesium.Color.RED;
+          satSize = 8;
+        } else if (sat.category === 'weather') {
+          satColor = Cesium.Color.CYAN;
+          satSize = 6;
+        } else if (sat.category === 'starlink') {
+          satColor = Cesium.Color.WHITE;
+          satSize = 4;
+        }
+
         viewer.entities.add({
           id: sat.id,
           name: sat.name,
           position: dynamicPosition,
           point: {
-            pixelSize: 15,
-            color: Cesium.Color.RED,
-            outlineColor: Cesium.Color.WHITE,
-            outlineWidth: 2,
+            pixelSize: satSize,
+            color: satColor,
+            outlineWidth: 1,
           },
         });
       }

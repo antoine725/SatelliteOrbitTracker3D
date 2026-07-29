@@ -1,6 +1,10 @@
 import SelectionDiv from './SelectionDiv';
 
-export default function SidebarMenu({ satellites, activeSatellites, currentCategory, onCategoryChange, onSelect }) {
+export default function SidebarMenu({ satellites, activeSatellites, currentCategory, onCategoryChange, onSelect, onToggleAll }) {
+  const isAllChecked = satellites.length > 0 && satellites.every(sat => 
+    activeSatellites.some(active => active.id === sat.id)
+  );
+
   return (
     <div className="overlay-menu">
       <h3 className="title-menu">Satellites</h3>
@@ -16,11 +20,11 @@ export default function SidebarMenu({ satellites, activeSatellites, currentCateg
       </select>
       
       <SelectionDiv 
-        classParam="toggleAll"
+        classParam="classCat"
         id="toggle-all"
         satName="Tout afficher / masquer"
-        isChecked={false}
-        onChange={() => console.log("Logique à venir")}
+        isChecked={isAllChecked}
+        onChange={onToggleAll}
       />
 
       <hr style={{ borderColor: '#333', margin: '1px 0' }} />

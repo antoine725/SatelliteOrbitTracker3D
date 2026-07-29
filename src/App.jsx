@@ -28,7 +28,8 @@ export default function App() {
               id: noradId,
               name: `${lines[i].trim()} (${noradId})`,
               tleLine1: lines[i + 1].trim(),
-              tleLine2: lines[i + 2].trim()
+              tleLine2: lines[i + 2].trim(),
+              category: category
             });
           }
         }
@@ -54,6 +55,28 @@ export default function App() {
         return [...prev, sat];
       }
     });
+  };
+
+  const handleToggleAll = () => {
+    const allCurrentSelected = satellites.length > 0 && satellites.every(sat => 
+      activeSatellites.some(active => active.id === sat.id)
+    );
+
+    if (allCurrentSelected) {
+      setActiveSatellites(prev => prev.filter(p => !satellites.some(s => s.id === p.id)));
+      setTrackedSatelliteId(null);
+      setLastClickedSatellite(null);
+    } else {
+      setActiveSatellites(prev => {
+        const newActive = [...prev];
+        satellites.forEach(sat => {
+          if (!newActive.some(active => active.id === sat.id)) {
+            newActive.push(sat);
+          }
+        });
+        return newActive;
+      });
+    }
   };
 
   const handleMapSelection = useCallback((id) => {
@@ -84,6 +107,7 @@ export default function App() {
         currentCategory={category}
         onCategoryChange={setCategory}
         onSelect={handleSelect} 
+        onToggleAll={handleToggleAll}
       />
 
       <InfoPanel 
