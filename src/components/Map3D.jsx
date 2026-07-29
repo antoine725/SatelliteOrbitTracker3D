@@ -164,6 +164,23 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
         viewer.selectedEntity = entity;
       }
 
+      if (entity) {
+        const position = entity.position.getValue(viewer.clock.currentTime);
+        if (position) {
+          const earthSphere = new Cesium.BoundingSphere(Cesium.Cartesian3.ZERO, Cesium.Ellipsoid.WGS84.minimumRadius);
+          const occluder = new Cesium.Occluder(earthSphere, viewer.camera.positionWC);
+          
+          if (!occluder.isPointVisible(position)) {
+            const currentZoomLevel = viewer.camera.positionCartographic.height;
+            
+            viewer.flyTo(entity, {
+              duration: 1.5,
+              offset: new Cesium.HeadingPitchRange(0, -Math.PI / 2, currentZoomLevel)
+            });
+          }
+        }
+      }
+
       if (entity && sat && selectedSatelliteId !== trackedSatelliteId) {
         const satrec = satellite.twoline2satrec(sat.tleLine1, sat.tleLine2);
         const periodMin = (2 * Math.PI) / satrec.no;
