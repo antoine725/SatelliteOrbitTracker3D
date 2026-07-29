@@ -5,7 +5,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 
 Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN;
 
-export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSatelliteId, onSatelliteSelect }) {
+export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSatelliteId, onSatelliteSelect, onSatelliteTrack }) {
   const cesiumContainer = useRef(null);
   const [viewer, setViewer] = useState(null);
 
@@ -33,6 +33,11 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
           onSatelliteSelect(null);
           return;
         }
+        if (typeof selectedEntity.id === 'string' && selectedEntity.id.endsWith('-label')) {
+          const baseId = selectedEntity.id.replace('-label', '');
+          viewer.selectedEntity = viewer.entities.getById(baseId);
+          return;
+        }
         onSatelliteSelect(selectedEntity.id);
       } else {
         onSatelliteSelect(null);
@@ -49,12 +54,38 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
   useEffect(() => {
     if (!viewer) return;
 
+    const trackListener = () => {
+      if (viewer.trackedEntity) {
+        let id = viewer.trackedEntity.id;
+        if (typeof id === 'string' && id.endsWith('-label')) id = id.replace('-label', '');
+        onSatelliteTrack(id);
+      } else {
+        onSatelliteTrack(null);
+      }
+    };
+
+    viewer.trackedEntityChanged.addEventListener(trackListener);
+
+    return () => {
+      viewer.trackedEntityChanged.removeEventListener(trackListener);
+    };
+  }, [viewer, onSatelliteTrack]);
+
+  useEffect(() => {
+    if (!viewer) return;
+
     const currentIds = activeSatellites.map((sat) => sat.id);
 
     const entitiesToRemove = [];
     for (let i = 0; i < viewer.entities.values.length; i++) {
       const entity = viewer.entities.values[i];
-      if (entity.id !== 'current-orbit-track' && !currentIds.includes(entity.id)) {
+      if (entity.id === 'current-orbit-track') continue;
+      
+      const baseId = typeof entity.id === 'string' && entity.id.endsWith('-label') 
+        ? entity.id.replace('-label', '') 
+        : entity.id;
+
+      if (!currentIds.includes(baseId)) {
         entitiesToRemove.push(entity);
       }
     }
@@ -104,11 +135,17 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
           id: sat.id,
           name: sat.name,
           position: dynamicPosition,
+          viewFrom: new Cesium.Cartesian3(0.0, -100000.0, 100000.0),
           point: {
             pixelSize: satSize,
             color: satColor,
             outlineWidth: 1,
-          },
+          }
+        });
+
+        viewer.entities.add({
+          id: `${sat.id}-label`,
+          position: dynamicPosition,
           label: {
             text: sat.name,
             font: '12px sans-serif',
@@ -117,8 +154,7 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
             outlineWidth: 2,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
             pixelOffset: new Cesium.Cartesian2(0, -15),
-            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, maxDisplayDistance),
-            show: true
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, maxDisplayDistance)
           }
         });
       }
@@ -128,23 +164,16 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
 
   useEffect(() => {
     if (!viewer) return;
-
-    viewer.entities.values.forEach(entity => {
-      if (entity.label) {
-        entity.label.show = true;
-      }
-    });
     
     if (trackedSatelliteId) {
       const entity = viewer.entities.getById(trackedSatelliteId);
-      if (entity) {
+      if (entity && viewer.trackedEntity !== entity) {
         viewer.trackedEntity = entity;
-        if (entity.label) {
-          entity.label.show = false;
-        }
       }
     } else {
-      viewer.trackedEntity = undefined;
+      if (viewer.trackedEntity !== undefined) {
+        viewer.trackedEntity = undefined;
+      }
     }
   }, [trackedSatelliteId, viewer]);
 

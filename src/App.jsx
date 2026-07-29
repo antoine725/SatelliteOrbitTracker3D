@@ -133,6 +133,10 @@ export default function App() {
     }
   }, [activeSatellites]);
 
+  const handleMapTracking = useCallback((id) => {
+    setTrackedSatelliteId(id || null);
+  }, []);
+
   return (
     <div className="app-layout">
       <div className="map-wrapper">
@@ -141,6 +145,7 @@ export default function App() {
           trackedSatelliteId={trackedSatelliteId}
           selectedSatelliteId={lastClickedSatellite?.id}
           onSatelliteSelect={handleMapSelection}
+          onSatelliteTrack={handleMapTracking} 
         />
       </div>
 
