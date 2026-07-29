@@ -29,6 +29,10 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
 
     const listener = (selectedEntity) => {
       if (selectedEntity) {
+        if (selectedEntity.id === 'current-orbit-track') {
+          onSatelliteSelect(null);
+          return;
+        }
         onSatelliteSelect(selectedEntity.id);
       } else {
         onSatelliteSelect(null);
@@ -50,7 +54,7 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
     const entitiesToRemove = [];
     for (let i = 0; i < viewer.entities.values.length; i++) {
       const entity = viewer.entities.values[i];
-      if (!currentIds.includes(entity.id)) {
+      if (entity.id !== 'current-orbit-track' && !currentIds.includes(entity.id)) {
         entitiesToRemove.push(entity);
       }
     }
@@ -147,15 +151,56 @@ export default function Map3D({ activeSatellites, trackedSatelliteId, selectedSa
   useEffect(() => {
     if (!viewer) return;
 
+    const existingOrbit = viewer.entities.getById('current-orbit-track');
+    if (existingOrbit) {
+      viewer.entities.remove(existingOrbit);
+    }
+
     if (selectedSatelliteId) {
       const entity = viewer.entities.getById(selectedSatelliteId);
+      const sat = activeSatellites.find(s => s.id === selectedSatelliteId);
+
       if (entity && viewer.selectedEntity !== entity) {
         viewer.selectedEntity = entity;
+      }
+
+      if (entity && sat && selectedSatelliteId !== trackedSatelliteId) {
+        const satrec = satellite.twoline2satrec(sat.tleLine1, sat.tleLine2);
+        const periodMin = (2 * Math.PI) / satrec.no;
+        const positions = [];
+        const now = new Date();
+        
+        for (let i = 0; i <= Math.ceil(periodMin); i += 1) {
+          const time = new Date(now.getTime() + i * 60000);
+          const posVel = satellite.propagate(satrec, time);
+          
+          if (posVel.position) {
+            const gmst = satellite.gstime(time);
+            const posGd = satellite.eciToGeodetic(posVel.position, gmst);
+            positions.push(Cesium.Cartesian3.fromDegrees(
+              satellite.degreesLong(posGd.longitude),
+              satellite.degreesLat(posGd.latitude),
+              posGd.height * 1000
+            ));
+          }
+        }
+
+        const pointColor = entity.point.color.getValue();
+
+        viewer.entities.add({
+          id: 'current-orbit-track',
+          polyline: {
+            positions: positions,
+            width: 2,
+            material: new Cesium.ColorMaterialProperty(pointColor.withAlpha(0.6)),
+            arcType: Cesium.ArcType.NONE
+          }
+        });
       }
     } else {
       viewer.selectedEntity = undefined;
     }
-  }, [selectedSatelliteId, viewer]);
+  }, [selectedSatelliteId, trackedSatelliteId, activeSatellites, viewer]);
 
   return <div ref={cesiumContainer} style={{ width: '100%', height: '100%' }} />;
 }
